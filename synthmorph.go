@@ -31,9 +31,16 @@ STRUCT FOR MANAGING KEY EXCHANGE STATE INFORMATION
 */
 
 type SynthmorphState struct {
-	PrivateKey [32]uint8
-	PublicKey  [32]uint8
-	LastRecv   []byte
+	//cryptographic state information
+	PrivateKey   [32]uint8
+	PublicKey    [32]uint8
+	OtherPub     [32]uint8
+	SharedSecret [32]byte
+
+	//RTP connection state information
+	SSRC uint32
+	//Data received goes into this "buffer" : needs to change into a buffer
+	LastRecv []byte
 }
 
 func NewSynthmorphState() SynthmorphState {
@@ -43,6 +50,7 @@ func NewSynthmorphState() SynthmorphState {
 	if err != nil {
 		fmt.Println("Error generating receiver keys:", err)
 	}
+	state.SSRC = 0x12345678
 	return state
 }
 
@@ -71,7 +79,7 @@ func printRTPPacket(packet *rtp.Packet) {
 MAIN SENDER/RECEIVER TOOLS
 */
 
-func SendPubKey(videoTrack *webrtc.TrackLocalStaticRTP, payload []byte) {
+func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, header byte, payload []byte) {
 	seq := uint16(1)
 	timestamp := uint32(12345678)
 
@@ -81,10 +89,10 @@ func SendPubKey(videoTrack *webrtc.TrackLocalStaticRTP, payload []byte) {
 			PayloadType:    96, // Dynamic payload type (e.g., for VP8)
 			SequenceNumber: seq,
 			Timestamp:      timestamp,
-			SSRC:           0x11223344, // Example SSRC; typically randomized
+			SSRC:           s.SSRC, // Example SSRC; typically randomized
 		},
 		// Set payload to "Hello World!"
-		Payload: payload,
+		Payload: append([]byte{header}, payload...),
 	}
 
 	if err := videoTrack.WriteRTP(pkt); err != nil {
