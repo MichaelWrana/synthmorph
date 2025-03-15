@@ -85,6 +85,8 @@ func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, heade
 
 	message := append([]byte{header}, payload...)
 
+	fmt.Print(message)
+
 	pkt := &rtp.Packet{
 		Header: rtp.Header{
 			Version:        2,
@@ -100,6 +102,8 @@ func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, heade
 	if err := videoTrack.WriteRTP(pkt); err != nil {
 		panic(err)
 	}
+
+	fmt.Printf("##### Sent Pkt, seqnum=%v##### \n", seq)
 }
 
 // interval is in seconds
