@@ -187,10 +187,10 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 		header := packet.Payload[0]
 		switch header {
 		case 0b00101111: //too specific, need to refine protocol a bit more, but gets the point across
-			fmt.Printf("===== Recv PubKey =====: %d", packet.Payload[1:])
+			fmt.Printf("===== Recv PubKey =====: %d\n", packet.Payload[1:])
 			s.OtherPub = *(*[32]uint8)(packet.Payload[1:]) // Unsafe but efficient conversion
 			curve25519.ScalarMult(&s.SharedSecret, &s.PrivateKey, &s.OtherPub)
-			fmt.Printf("===== Shared Scrt =====: %d", s.SharedSecret)
+			fmt.Printf("===== Shared Scrt =====: %d\n", s.SharedSecret)
 		default:
 			fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
 			printRTPPacket(packet)
