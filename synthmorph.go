@@ -85,7 +85,7 @@ func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, heade
 
 	message := append([]byte{header}, payload...)
 
-	fmt.Print(message)
+	fmt.Println(message)
 
 	pkt := &rtp.Packet{
 		Header: rtp.Header{
@@ -93,7 +93,7 @@ func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, heade
 			PayloadType:    96, // Dynamic payload type (e.g., for VP8)
 			SequenceNumber: seq,
 			Timestamp:      timestamp,
-			SSRC:           s.SSRC, // Example SSRC; typically randomized
+			SSRC:           0x11223344, // Example SSRC; typically randomized
 		},
 		// Set payload to "Hello World!"
 		Payload: message,
@@ -108,7 +108,7 @@ func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, heade
 
 // interval is in seconds
 func SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocalStaticRTP, interval int32) {
-	seq := uint16(1)
+	seq := uint16(2)
 	timestamp := uint32(12345678)
 	// Set ticker interval to 5 seconds
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
