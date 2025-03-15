@@ -2,9 +2,11 @@ package synthmorph
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/pion/rtp"
@@ -26,12 +28,33 @@ func GenerateKeyPair() (privateKey, publicKey [32]byte, err error) {
 	return
 }
 
+type RTPStack struct {
+	packets []*rtp.Packet
+}
+
+// Push adds an RTP packet to the top of the stack
+func (s *RTPStack) Push(packet *rtp.Packet) {
+	s.packets = append(s.packets, packet)
+}
+
+// Pop removes and returns the top RTP packet from the stack
+func (s *RTPStack) Pop() (*rtp.Packet, error) {
+	if len(s.packets) == 0 {
+		return nil, errors.New("stack is empty")
+	}
+
+	packet := s.packets[len(s.packets)-1]
+	s.packets = s.packets[:len(s.packets)-1]
+	return packet, nil
+}
+
 /*
 STRUCT FOR MANAGING KEY EXCHANGE STATE INFORMATION
 */
 
 type SynthmorphState struct {
 	//cryptographic state information
+	lock         sync.Mutex
 	PrivateKey   [32]uint8
 	PublicKey    [32]uint8
 	OtherPub     [32]uint8
@@ -40,7 +63,7 @@ type SynthmorphState struct {
 	//RTP connection state information
 	SSRC uint32
 	//Data received goes into this "buffer" : needs to change into a buffer
-	LastRecv []byte
+	RecvBuffer RTPStack
 }
 
 func NewSynthmorphState() SynthmorphState {
@@ -51,6 +74,7 @@ func NewSynthmorphState() SynthmorphState {
 		fmt.Println("Error generating receiver keys:", err)
 	}
 	state.SSRC = 0x12345678
+	state.lock = sync.Mutex{}
 	return state
 }
 
@@ -144,14 +168,14 @@ func (s *SynthmorphState) SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocal
 
 // Some sort of wrapper? - part of the Pion API?
 // This one should not be called concurrently
-func SynthmorphReceiverTrack(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+func (s *SynthmorphState) SynthmorphReceiverTrack(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 	fmt.Println("-----Established Connection - Awaiting Packets-----")
-	go SynthmorphPacketRecv(track)
+	go s.SynthmorphPacketRecv(track)
 }
 
 // Actually read packets
 // this one should be called concurrently
-func SynthmorphPacketRecv(track *webrtc.TrackRemote) {
+func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 	for {
 		packet, _, err := track.ReadRTP()
 		if err != nil {
@@ -161,5 +185,9 @@ func SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 
 		fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
 		printRTPPacket(packet)
+
+		s.lock.Lock()
+		defer s.lock.Unlock()
+		s.RecvBuffer.Push(packet)
 	}
 }
