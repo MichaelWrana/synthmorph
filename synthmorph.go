@@ -1,6 +1,8 @@
 package synthmorph
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -17,6 +19,7 @@ import (
 CRYPTOGRAPHY STUFF
 */
 
+// elliptic curve cryptography 🤯
 func GenerateKeyPair() (privateKey, publicKey [32]byte, err error) {
 	// Generate a random private key.
 	if _, err = io.ReadFull(rand.Reader, privateKey[:]); err != nil {
@@ -25,6 +28,56 @@ func GenerateKeyPair() (privateKey, publicKey [32]byte, err error) {
 	// Derive the public key.
 	curve25519.ScalarBaseMult(&publicKey, &privateKey)
 	return
+}
+
+// encrypt encrypts the plaintext using AES-GCM with the given key.
+// The nonce is generated randomly and prepended to the ciphertext.
+func encrypt(key, plaintext []byte) ([]byte, error) {
+	// Create an AES cipher block from the key.
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	// Wrap the block cipher in GCM mode.
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+	// Create a random nonce of the required size.
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+	// Seal appends the encrypted data to the nonce.
+	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
+	return ciphertext, nil
+}
+
+// decrypt decrypts the ciphertext using AES-GCM with the given key.
+// It expects the nonce to be prepended to the ciphertext.
+func decrypt(key, ciphertext []byte) ([]byte, error) {
+	// Create an AES cipher block from the key.
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	// Wrap the block cipher in GCM mode.
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+	nonceSize := gcm.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
+	// Extract the nonce and the actual ciphertext.
+	nonce, ct := ciphertext[:nonceSize], ciphertext[nonceSize:]
+	// Decrypt the data.
+	plaintext, err := gcm.Open(nil, nonce, ct, nil)
+	if err != nil {
+		return nil, err
+	}
+	return plaintext, nil
 }
 
 /*
@@ -143,6 +196,13 @@ func (s *SynthmorphState) SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocal
 	timestamp := uint32(12345678)
 
 	message := []byte("Hello World!")
+	fmt.Printf("##### Encrypting Msg: %v #####", message)
+
+	encryptedMsg, err := encrypt(s.SharedSecret[:], message)
+	if err != nil {
+		fmt.Println("Encryption error:", err)
+		return
+	}
 
 	// Set ticker interval to 5 seconds
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
@@ -158,7 +218,7 @@ func (s *SynthmorphState) SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocal
 				SSRC:           0x11223344, // Example SSRC; typically randomized
 			},
 			// Set payload to "Hello World!"
-			Payload: message,
+			Payload: encryptedMsg,
 		}
 
 		if err := videoTrack.WriteRTP(pkt); err != nil {
@@ -187,6 +247,7 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 		header := packet.Payload[0]
 		switch header {
 		case 0b00101111: //too specific, need to refine protocol a bit more, but gets the point across
+			// (3) COMPUTE SHARED SECRET
 			fmt.Printf("===== Recv PubKey =====: %d\n", packet.Payload[1:])
 			s.OtherPub = *(*[32]uint8)(packet.Payload[1:]) // Unsafe but efficient conversion
 			curve25519.ScalarMult(&s.SharedSecret, &s.PrivateKey, &s.OtherPub)
