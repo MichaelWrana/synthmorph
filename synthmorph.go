@@ -205,7 +205,7 @@ func (s *SynthmorphState) SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocal
 
 	for range ticker.C {
 
-		fmt.Printf("===== Encrypting Msg: %v =====\n", message)
+		fmt.Printf("===== Encrypting Msg: %s =====\n", message)
 		encryptedMsg, err := encrypt(s.SharedSecret[:], message)
 		if err != nil {
 			fmt.Println("Encryption error:", err)
@@ -258,6 +258,7 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 		default:
 
 			fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
+			fmt.Printf("===== Decrypting Message: %s =====", packet.Payload)
 
 			packet.Payload, err = decrypt(s.SharedSecret[:], packet.Payload)
 			if err != nil {
