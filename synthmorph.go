@@ -198,19 +198,20 @@ func (s *SynthmorphState) SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocal
 	timestamp := uint32(12345678)
 
 	message := []byte("Hello World!")
-	fmt.Printf("##### Encrypting Msg: %v #####\n", message)
-
-	encryptedMsg, err := encrypt(s.SharedSecret[:], message)
-	if err != nil {
-		fmt.Println("Encryption error:", err)
-		return
-	}
 
 	// Set ticker interval to 5 seconds
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
+
+		fmt.Printf("===== Encrypting Msg: %v =====\n", message)
+		encryptedMsg, err := encrypt(s.SharedSecret[:], message)
+		if err != nil {
+			fmt.Println("Encryption error:", err)
+			return
+		}
+
 		pkt := &rtp.Packet{
 			Header: rtp.Header{
 				Version:        2,
