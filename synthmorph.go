@@ -83,6 +83,8 @@ func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, heade
 	seq := uint16(1)
 	timestamp := uint32(12345678)
 
+	message := append([]byte{header}, payload...)
+
 	pkt := &rtp.Packet{
 		Header: rtp.Header{
 			Version:        2,
@@ -92,7 +94,7 @@ func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, heade
 			SSRC:           s.SSRC, // Example SSRC; typically randomized
 		},
 		// Set payload to "Hello World!"
-		Payload: append([]byte{header}, payload...),
+		Payload: message,
 	}
 
 	if err := videoTrack.WriteRTP(pkt); err != nil {
