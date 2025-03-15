@@ -2,6 +2,7 @@ package synthmorph
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/pion/rtp"
@@ -58,12 +59,24 @@ func SynthmorphSender(videoTrack *webrtc.TrackLocalStaticRTP, interval int32) {
 	}
 }
 
-// Some sort of wrapper - part of the Pion API
+// Some sort of wrapper? - part of the Pion API?
+// This one should not be called concurrently
 func SynthmorphReceiverTrack(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-	fmt.Println("Reciever Called")
+	fmt.Println("-----Established Connection - Awaiting Packets-----")
+	go SynthmorphPacketRecv(track)
 }
 
-// Actually read packets - must be run concurrently
+// Actually read packets
+// this one should be called concurrently
 func SynthmorphPacketRecv(track *webrtc.TrackRemote) {
+	for {
+		packet, _, err := track.ReadRTP()
+		if err != nil {
+			log.Printf("Error reading RTP packet: %v\n", err)
+			return
+		}
 
+		fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
+		PrintRTPPacket(packet)
+	}
 }
