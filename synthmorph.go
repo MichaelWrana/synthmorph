@@ -258,7 +258,7 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 		default:
 
 			fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
-			fmt.Printf("===== Decrypting Message: %s =====", packet.Payload)
+			fmt.Printf("===== Decrypting Message: %s =====\n", packet.Payload)
 
 			packet.Payload, err = decrypt(s.SharedSecret[:], packet.Payload)
 			if err != nil {
