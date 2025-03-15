@@ -1,15 +1,22 @@
 package synthmorph
 
 import (
+	"crypto/rand"
 	"fmt"
+	"io"
 	"log"
 	"time"
 
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v4"
+	"golang.org/x/crypto/curve25519"
 )
 
-func PrintRTPPacket(packet *rtp.Packet) {
+/*
+LOCAL HELPER FUNCTIONS
+*/
+
+func printRTPPacket(packet *rtp.Packet) {
 	// Print header details.
 	fmt.Printf("RTP Header:\n")
 	fmt.Printf("  Version: %d\n", packet.Version)
@@ -24,6 +31,20 @@ func PrintRTPPacket(packet *rtp.Packet) {
 	payloadStr := string(packet.Payload)
 	fmt.Printf("Payload (string): %s\n", payloadStr)
 	fmt.Printf("Payload (hex): %x\n", packet.Payload)
+}
+
+/*
+CRYPTOGRAPHY STUFF
+*/
+
+func generateKeyPair() (privateKey, publicKey [32]byte, err error) {
+	// Generate a random private key.
+	if _, err = io.ReadFull(rand.Reader, privateKey[:]); err != nil {
+		return
+	}
+	// Derive the public key.
+	curve25519.ScalarBaseMult(&publicKey, &privateKey)
+	return
 }
 
 // interval is in seconds
@@ -77,6 +98,6 @@ func SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 		}
 
 		fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
-		PrintRTPPacket(packet)
+		printRTPPacket(packet)
 	}
 }
