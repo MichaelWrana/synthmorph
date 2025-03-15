@@ -31,14 +31,15 @@ STRUCT FOR MANAGING KEY EXCHANGE STATE INFORMATION
 */
 
 type SynthmorphState struct {
-	privateKey [32]uint8
-	publicKey  [32]uint8
+	PrivateKey [32]uint8
+	PublicKey  [32]uint8
+	LastRecv   []byte
 }
 
 func NewSynthmorphState() SynthmorphState {
 	state := SynthmorphState{}
 	var err error
-	state.privateKey, state.publicKey, err = GenerateKeyPair()
+	state.PrivateKey, state.PublicKey, err = GenerateKeyPair()
 	if err != nil {
 		fmt.Println("Error generating receiver keys:", err)
 	}
@@ -65,6 +66,10 @@ func printRTPPacket(packet *rtp.Packet) {
 	fmt.Printf("Payload (string): %s\n", payloadStr)
 	fmt.Printf("Payload (hex): %x\n", packet.Payload)
 }
+
+/*
+MAIN SENDER/RECEIVER TOOLS
+*/
 
 func SendPubKey(videoTrack *webrtc.TrackLocalStaticRTP, payload []byte) {
 	seq := uint16(1)
