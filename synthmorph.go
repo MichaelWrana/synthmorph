@@ -173,16 +173,9 @@ func (s *SynthmorphState) SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocal
 	}
 }
 
-// Some sort of wrapper? - part of the Pion API?
-// This one should not be called concurrently
-func SynthmorphReceiverTrack(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-	fmt.Println("-----Established Connection - Awaiting Packets-----")
-	go SynthmorphPacketRecv(track)
-}
-
 // Actually read packets
 // this one should be called concurrently
-func SynthmorphPacketRecv(track *webrtc.TrackRemote) {
+func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 	for {
 		packet, _, err := track.ReadRTP()
 		if err != nil {
