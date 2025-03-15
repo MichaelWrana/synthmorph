@@ -173,7 +173,7 @@ func (s *SynthmorphState) SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocal
 	}
 }
 
-// Actually read packets
+// Read packets
 // this one should be called concurrently
 func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 	for {
@@ -182,11 +182,15 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 			log.Printf("Error reading RTP packet: %v\n", err)
 			return
 		}
-
+		// figure out what to do with the incoming packet
+		// see the protocol specification google doc for more info
 		header := packet.Payload[0]
 		switch header {
 		case 0b00101111: //too specific, need to refine protocol a bit more, but gets the point across
 			fmt.Printf("===== Recv PubKey =====: %d", packet.Payload[1:])
+			s.OtherPub = *(*[32]uint8)(packet.Payload[1:]) // Unsafe but efficient conversion
+			curve25519.ScalarMult(&s.SharedSecret, &s.PrivateKey, &s.OtherPub)
+			fmt.Printf("===== Shared Scrt =====: %d", s.SharedSecret)
 		default:
 			fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
 			printRTPPacket(packet)
