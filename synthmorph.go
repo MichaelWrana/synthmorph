@@ -31,10 +31,17 @@ STRUCT FOR MANAGING KEY EXCHANGE STATE INFORMATION
 */
 
 type SynthmorphState struct {
+	privateKey [32]uint8
+	publicKey  [32]uint8
 }
 
 func NewSynthmorphState() SynthmorphState {
 	state := SynthmorphState{}
+	var err error
+	state.privateKey, state.publicKey, err = GenerateKeyPair()
+	if err != nil {
+		fmt.Println("Error generating receiver keys:", err)
+	}
 	return state
 }
 
