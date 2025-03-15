@@ -30,7 +30,7 @@ func SynthmorphSender(videoTrack *webrtc.TrackLocalStaticRTP, interval int32) {
 	seq := uint16(1)
 	timestamp := uint32(12345678)
 	// Set ticker interval to 5 seconds
-	ticker := time.NewTicker(time.Duration(interval*1000) * time.Second)
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
