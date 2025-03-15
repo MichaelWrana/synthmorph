@@ -13,6 +13,32 @@ import (
 )
 
 /*
+CRYPTOGRAPHY STUFF
+*/
+
+func GenerateKeyPair() (privateKey, publicKey [32]byte, err error) {
+	// Generate a random private key.
+	if _, err = io.ReadFull(rand.Reader, privateKey[:]); err != nil {
+		return
+	}
+	// Derive the public key.
+	curve25519.ScalarBaseMult(&publicKey, &privateKey)
+	return
+}
+
+/*
+STRUCT FOR MANAGING KEY EXCHANGE STATE INFORMATION
+*/
+
+type SynthmorphState struct {
+}
+
+func NewSynthmorphState() SynthmorphState {
+	state := SynthmorphState{}
+	return state
+}
+
+/*
 LOCAL HELPER FUNCTIONS
 */
 
@@ -33,18 +59,25 @@ func printRTPPacket(packet *rtp.Packet) {
 	fmt.Printf("Payload (hex): %x\n", packet.Payload)
 }
 
-/*
-CRYPTOGRAPHY STUFF
-*/
+func SendPubKey(videoTrack *webrtc.TrackLocalStaticRTP, payload []byte) {
+	seq := uint16(1)
+	timestamp := uint32(12345678)
 
-func GenerateKeyPair() (privateKey, publicKey [32]byte, err error) {
-	// Generate a random private key.
-	if _, err = io.ReadFull(rand.Reader, privateKey[:]); err != nil {
-		return
+	pkt := &rtp.Packet{
+		Header: rtp.Header{
+			Version:        2,
+			PayloadType:    96, // Dynamic payload type (e.g., for VP8)
+			SequenceNumber: seq,
+			Timestamp:      timestamp,
+			SSRC:           0x11223344, // Example SSRC; typically randomized
+		},
+		// Set payload to "Hello World!"
+		Payload: payload,
 	}
-	// Derive the public key.
-	curve25519.ScalarBaseMult(&publicKey, &privateKey)
-	return
+
+	if err := videoTrack.WriteRTP(pkt); err != nil {
+		panic(err)
+	}
 }
 
 // interval is in seconds
