@@ -37,7 +37,7 @@ func printRTPPacket(packet *rtp.Packet) {
 CRYPTOGRAPHY STUFF
 */
 
-func generateKeyPair() (privateKey, publicKey [32]byte, err error) {
+func GenerateKeyPair() (privateKey, publicKey [32]byte, err error) {
 	// Generate a random private key.
 	if _, err = io.ReadFull(rand.Reader, privateKey[:]); err != nil {
 		return
@@ -48,7 +48,7 @@ func generateKeyPair() (privateKey, publicKey [32]byte, err error) {
 }
 
 // interval is in seconds
-func SynthmorphSender(videoTrack *webrtc.TrackLocalStaticRTP, interval int32) {
+func SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocalStaticRTP, interval int32) {
 	seq := uint16(1)
 	timestamp := uint32(12345678)
 	// Set ticker interval to 5 seconds
