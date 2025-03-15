@@ -195,8 +195,8 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 		fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
 		printRTPPacket(packet)
 
-		s.lock.Lock()
-		defer s.lock.Unlock()
+		s.Lock.Lock()
+		defer s.Lock.Unlock()
 		s.RecvBuffer.Push(packet)
 	}
 }
