@@ -192,11 +192,13 @@ func (s *SynthmorphState) SendData(videoTrack *webrtc.TrackLocalStaticRTP, heade
 
 // interval is in seconds
 func (s *SynthmorphState) SynthmorphPeriodicSender(videoTrack *webrtc.TrackLocalStaticRTP, interval int32) {
+	time.Sleep(5 * time.Second)
+
 	seq := uint16(2)
 	timestamp := uint32(12345678)
 
 	message := []byte("Hello World!")
-	fmt.Printf("##### Encrypting Msg: %v #####", message)
+	fmt.Printf("##### Encrypting Msg: %v #####\n", message)
 
 	encryptedMsg, err := encrypt(s.SharedSecret[:], message)
 	if err != nil {
@@ -253,7 +255,15 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 			curve25519.ScalarMult(&s.SharedSecret, &s.PrivateKey, &s.OtherPub)
 			fmt.Printf("===== Shared Scrt =====: %d\n", s.SharedSecret)
 		default:
+
 			fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
+
+			packet.Payload, err = decrypt(s.SharedSecret[:], packet.Payload)
+			if err != nil {
+				fmt.Println("Decryption error:", err)
+				return
+			}
+
 			printRTPPacket(packet)
 		}
 	}
