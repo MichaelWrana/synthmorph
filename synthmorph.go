@@ -2,7 +2,6 @@ package synthmorph
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -28,6 +27,10 @@ func GenerateKeyPair() (privateKey, publicKey [32]byte, err error) {
 	return
 }
 
+/*
+STRUCT FOR MANAGING BUFFER OF RECEIVED PACKETS
+*/
+
 type RTPStack struct {
 	packets []*rtp.Packet
 }
@@ -38,14 +41,20 @@ func (s *RTPStack) Push(packet *rtp.Packet) {
 }
 
 // Pop removes and returns the top RTP packet from the stack
-func (s *RTPStack) Pop() (*rtp.Packet, error) {
-	if len(s.packets) == 0 {
-		return nil, errors.New("stack is empty")
-	}
-
+func (s *RTPStack) Pop() *rtp.Packet {
 	packet := s.packets[len(s.packets)-1]
 	s.packets = s.packets[:len(s.packets)-1]
-	return packet, nil
+	return packet
+}
+
+// Size returns the number of packets in the stack
+func (s *RTPStack) Size() int {
+	return len(s.packets)
+}
+
+// IsEmpty returns whether the stack is empty
+func (s *RTPStack) IsEmpty() bool {
+	return len(s.packets) == 0
 }
 
 /*
@@ -54,7 +63,7 @@ STRUCT FOR MANAGING KEY EXCHANGE STATE INFORMATION
 
 type SynthmorphState struct {
 	//cryptographic state information
-	lock         sync.Mutex
+	Lock         sync.Mutex
 	PrivateKey   [32]uint8
 	PublicKey    [32]uint8
 	OtherPub     [32]uint8
@@ -74,7 +83,7 @@ func NewSynthmorphState() SynthmorphState {
 		fmt.Println("Error generating receiver keys:", err)
 	}
 	state.SSRC = 0x12345678
-	state.lock = sync.Mutex{}
+	state.Lock = sync.Mutex{}
 	return state
 }
 
