@@ -6,7 +6,7 @@ import (
 	"github.com/pion/rtp"
 )
 
-func printRTPPacket(packet *rtp.Packet) {
+func PrintRTPPacket(packet *rtp.Packet) {
 	// Print header details.
 	fmt.Printf("RTP Header:\n")
 	fmt.Printf("  Version: %d\n", packet.Version)
