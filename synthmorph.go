@@ -190,8 +190,14 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 			return
 		}
 
-		fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
-		printRTPPacket(packet)
+		header := packet.Payload[0]
+		switch header {
+		case 0b00101111: //too specific, need to refine protocol a bit more, but gets the point across
+			fmt.Printf("===== Recv PubKey =====: %d", packet.Payload[1:])
+		default:
+			fmt.Printf("##### Recv Pkt, seqnum=%v##### \n", packet.SequenceNumber)
+			printRTPPacket(packet)
+		}
 
 		s.Lock.Lock()
 		defer s.Lock.Unlock()
