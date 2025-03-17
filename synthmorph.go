@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pion/rtcp"
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v4"
 	"golang.org/x/crypto/curve25519"
@@ -267,6 +268,43 @@ func (s *SynthmorphState) SynthmorphPacketRecv(track *webrtc.TrackRemote) {
 			}
 
 			printRTPPacket(packet)
+		}
+	}
+}
+
+// Read packets
+// this one should be called concurrently
+func (s *SynthmorphState) SynthmorphRTCPLog(receiver *webrtc.RTPReceiver) {
+	for {
+		// Read the RTCP packets as they become available for our new remote track
+		rtcpPackets, _, rtcpErr := receiver.ReadRTCP()
+		if rtcpErr != nil {
+			panic(rtcpErr)
+		}
+
+		for _, packet := range rtcpPackets {
+			switch p := packet.(type) {
+			case *rtcp.SenderReport:
+				fmt.Printf("Received Sender Report: SSRC=%d, NTP=%d.%d, RTPTime=%d, PacketCount=%d, OctetCount=%d\n",
+					p.SSRC, p.NTPTime>>32, p.NTPTime&0xFFFFFFFF, p.RTPTime, p.PacketCount, p.OctetCount)
+			case *rtcp.ReceiverReport:
+				fmt.Printf("Received Receiver Report: SSRC=%d, Reports=%d\n", p.SSRC, len(p.Reports))
+				for i, report := range p.Reports {
+					fmt.Printf("  Report %d: SSRC=%d, FractionLost=%d, TotalLost=%d, LastSeq=%d, Jitter=%d\n",
+						i, report.SSRC, report.FractionLost, report.TotalLost, report.LastSequenceNumber, report.Jitter)
+				}
+			case *rtcp.SourceDescription:
+				fmt.Printf("Received Source Description: %d descriptions\n", len(p.Chunks))
+				for _, chunk := range p.Chunks {
+					fmt.Printf("  Chunk: SSRC=%d, CNAME=%s\n", chunk.Source, chunk.Items[0].Text)
+				}
+			case *rtcp.PictureLossIndication:
+				fmt.Printf("Received Picture Loss Indication for SSRC=%d\n", p.MediaSSRC)
+			case *rtcp.FullIntraRequest:
+				fmt.Printf("Received Full Intra Request for SSRC=%d\n", p.MediaSSRC)
+			default:
+				fmt.Printf("Received RTCP Packet: %v\n", p)
+			}
 		}
 	}
 }
